@@ -83,34 +83,23 @@ def _model_ready(path: str = MODEL_PATH) -> bool:
 def _ensure_ppo_model() -> None:
     if _model_ready():
         return
-    print(f"[startup] PPO model missing/unreadable at {MODEL_PATH}. Running quick training...", flush=True)
-    try:
-        result = subprocess.run(
-            [
-                sys.executable,
-                TRAIN_SCRIPT,
-                "--quick",
-                "--quick-steps",
-                str(AUTO_TRAIN_STEPS),
-                "--quick-eval",
-                str(AUTO_TRAIN_EVAL),
-            ],
-            cwd=ROOT,
-            check=False,
-            timeout=AUTO_TRAIN_TIMEOUT,
-        )
-        if result.returncode != 0:
-            print(f"[startup] WARNING: training script exited {result.returncode} — continuing without PPO model", flush=True)
-            return
-    except subprocess.TimeoutExpired:
-        print(f"[startup] WARNING: training timed out after {AUTO_TRAIN_TIMEOUT}s — continuing without PPO model", flush=True)
-        return
-    except Exception as e:
-        print(f"[startup] WARNING: training failed ({e}) — continuing without PPO model", flush=True)
-        return
-
+    print(f"[startup] PPO model missing/unreadable at {MODEL_PATH}. Running quick training...")
+    subprocess.run(
+        [
+            sys.executable,
+            TRAIN_SCRIPT,
+            "--quick",
+            "--quick-steps",
+            str(AUTO_TRAIN_STEPS),
+            "--quick-eval",
+            str(AUTO_TRAIN_EVAL),
+        ],
+        cwd=ROOT,
+        check=True,
+        timeout=AUTO_TRAIN_TIMEOUT,
+    )
     if not _model_ready():
-        print(f"[startup] WARNING: training finished but no model at {MODEL_PATH} — continuing without it", flush=True)
+        raise RuntimeError(f"Auto-training finished but no usable model was found at {MODEL_PATH}.")
 
 def _load_ppo():
     global _ppo_model
@@ -1054,35 +1043,22 @@ def build_ui():
 if __name__ == "__main__":
     import argparse
     import uvicorn
-    import threading
     p = argparse.ArgumentParser()
     p.add_argument("--share", action="store_true")
     p.add_argument("--port", type=int, default=7860)
     args = p.parse_args()
 
-    def _background_setup():
-        """Run slow startup tasks in background so server binds immediately."""
-        try:
-            rainfall = os.path.join(DATA_DIR, "rainfall.csv")
-            if not os.path.exists(rainfall):
-                print("Generating weather data...", flush=True)
-                try:
-                    subprocess.run([sys.executable, "scripts/generate_data.py"], check=True, timeout=120)
-                except Exception as e:
-                    print(f"[startup] WARNING: weather data generation failed ({e})", flush=True)
-        except Exception as e:
-            print(f"[startup] WARNING: setup failed ({e})", flush=True)
+    rainfall = os.path.join(DATA_DIR, "rainfall.csv")
+    if not os.path.exists(rainfall):
+        print("Generating weather data...")
+        subprocess.run([sys.executable, "scripts/generate_data.py"], check=True)
 
-        if os.getenv("AUTO_TRAIN_STEPS", "25000") != "0":
-            _ensure_ppo_model()
-
-    # Start weather + training in background — server binds to port immediately
-    t = threading.Thread(target=_background_setup, daemon=True)
-    t.start()
+    if os.getenv("AUTO_TRAIN_STEPS", "25000") != "0":
+        _ensure_ppo_model()   # ✅ FIXED
 
     demo = build_ui()
-
-    print(f"🚀  Starting Precision Irrigation Agent on port {args.port}", flush=True)
+    
+    print(f"🚀  Starting Precision Irrigation Agent on port {args.port}")
     app = gr.mount_gradio_app(
         app,
         demo,
@@ -1090,3 +1066,4 @@ if __name__ == "__main__":
         root_path=UI_MOUNT_PATH,
     )
     uvicorn.run(app, host="0.0.0.0", port=args.port)
+
