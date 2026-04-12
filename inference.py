@@ -19,12 +19,14 @@ def _safe_int(value: str, default: int) -> int:
         return default
  
  
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.featherless.ai/v1")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2.5-7B-Instruct")
+# Validator injects API_KEY — check it first, then fall through to alternatives
 OPENAI_API_KEY = (
-    os.getenv("OPENAI_API_KEY")
-    or os.getenv("FEATHERLESS_API_KEY")
+    os.getenv("API_KEY")
     or os.getenv("HF_TOKEN")
+    or os.getenv("OPENAI_API_KEY")
+    or os.getenv("FEATHERLESS_API_KEY")
 )
  
 LOCAL_URL  = os.getenv("LOCAL_URL",  "http://localhost:7860")
@@ -41,7 +43,9 @@ SERVER_RETRY_DELAY = 5   # seconds between each health-check retry
 # ─────────────────────────────────────────────────────────────
  
 try:
-    client = OpenAI(base_url=API_BASE_URL, api_key=OPENAI_API_KEY or "dummy-key")
+    if not OPENAI_API_KEY:
+        print("[DEBUG] WARNING: No API key found in API_KEY / HF_TOKEN / OPENAI_API_KEY", flush=True)
+    client = OpenAI(base_url=API_BASE_URL, api_key=OPENAI_API_KEY or "no-key-set")
 except Exception:
     client = None
  
