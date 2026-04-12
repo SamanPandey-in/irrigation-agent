@@ -1,7 +1,5 @@
 # Core RL environment
-# numpy 2.x required for Python 3.13 — 1.x has no pre-built wheel and
-# triggers a Meson/C-compiler build that fails in python:3.13-slim
-numpy==2.2.4
+numpy==1.26.4
 pandas==2.2.2
 
 # Visualisation
@@ -9,13 +7,12 @@ matplotlib==3.9.0
 
 # Gradio UI for Hugging Face Spaces
 gradio==6.11.0
-audiooop-lts==0.2.1; python_version >= "3.13"
 
 # OpenEnv spec compliance
 openenv-core==0.2.3
 
 # OpenEnv API and Inference
-openai==1.76.0
+openai==2.7.2
 fastapi==0.115.12
 uvicorn==0.34.0
 python-multipart==0.0.20

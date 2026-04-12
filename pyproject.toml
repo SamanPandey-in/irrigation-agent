@@ -14,7 +14,7 @@ dependencies = [
   "matplotlib==3.9.0",
   "gradio==6.11.0",
   "openenv-core==0.2.3",
-  "openai==1.76.0",
+  "openai==2.7.2",
   "fastapi==0.115.12",
   "uvicorn==0.34.0",
   "python-multipart==0.0.20",
