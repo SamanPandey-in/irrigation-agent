@@ -185,28 +185,42 @@ def _get_api_env():
     return _api_env
 
 @app.post("/reset")
-async def reset_env(req: Optional[ResetRequest] = None):
+async def reset_env(request: Request):
     global _api_env, _api_history, _api_last_obs
 
     async with _api_lock:
+        # Accept empty / malformed / non-JSON reset payloads gracefully.
+        # Some validators POST without a JSON body and expect reset to still succeed.
+        try:
+            payload = await request.json()
+            if not isinstance(payload, dict):
+                payload = {}
+        except Exception:
+            payload = {}
+
+        task_id = payload.get("task_id", "task_1")
+        seed = payload.get("seed", None)
+        try:
+            seed = int(seed) if seed is not None else None
+        except Exception:
+            seed = None
+
         # Map task_id to presets
         preset = "🌦️ Normal"
-        if req:
-            if req.task_id == "task_2": preset = "🏜️ Drought"
-            elif req.task_id == "task_3": preset = "🌊 Flood"
+        if task_id == "task_2":
+            preset = "🏜️ Drought"
+        elif task_id == "task_3":
+            preset = "🎯 Hard Mode"
 
         cfg = EnvConfig.from_preset(preset)
         # Re-create env for each reset so task preset and seed are consistently applied.
-        _api_env = make_env(cfg, seed=req.seed if req else None)
-        obs, info = _api_env.reset(seed=req.seed if req else None)
+        _api_env = make_env(cfg, seed=seed)
+        obs, _info = _api_env.reset(seed=seed)
         _api_history = []
         _api_last_obs = obs
 
-        return {
-            "observation": _to_builtin(obs),
-            "reward": None,
-            "done": False,
-        }
+        # Keep reset response minimal and strict-validator friendly.
+        return {"observation": _to_builtin(obs)}
 
 @app.post("/step")
 async def step_env(req: ActionRequest):
