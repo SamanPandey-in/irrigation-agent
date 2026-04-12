@@ -1054,25 +1054,35 @@ def build_ui():
 if __name__ == "__main__":
     import argparse
     import uvicorn
+    import threading
     p = argparse.ArgumentParser()
     p.add_argument("--share", action="store_true")
     p.add_argument("--port", type=int, default=7860)
     args = p.parse_args()
 
-    rainfall = os.path.join(DATA_DIR, "rainfall.csv")
-    if not os.path.exists(rainfall):
-        print("Generating weather data...", flush=True)
+    def _background_setup():
+        """Run slow startup tasks in background so server binds immediately."""
         try:
-            subprocess.run([sys.executable, "scripts/generate_data.py"], check=True, timeout=120)
+            rainfall = os.path.join(DATA_DIR, "rainfall.csv")
+            if not os.path.exists(rainfall):
+                print("Generating weather data...", flush=True)
+                try:
+                    subprocess.run([sys.executable, "scripts/generate_data.py"], check=True, timeout=120)
+                except Exception as e:
+                    print(f"[startup] WARNING: weather data generation failed ({e})", flush=True)
         except Exception as e:
-            print(f"[startup] WARNING: weather data generation failed ({e}) — continuing", flush=True)
+            print(f"[startup] WARNING: setup failed ({e})", flush=True)
 
-    if os.getenv("AUTO_TRAIN_STEPS", "25000") != "0":
-        _ensure_ppo_model()
+        if os.getenv("AUTO_TRAIN_STEPS", "25000") != "0":
+            _ensure_ppo_model()
+
+    # Start weather + training in background — server binds to port immediately
+    t = threading.Thread(target=_background_setup, daemon=True)
+    t.start()
 
     demo = build_ui()
-    
-    print(f"🚀  Starting Precision Irrigation Agent on port {args.port}")
+
+    print(f"🚀  Starting Precision Irrigation Agent on port {args.port}", flush=True)
     app = gr.mount_gradio_app(
         app,
         demo,
