@@ -29,10 +29,15 @@ COPY --chown=user . .
 # Pre-generate weather data
 RUN python scripts/generate_data.py
 
-# Pre-train PPO model so startup is instant (no blocking training at runtime)
-RUN mkdir -p models && \
-    python scripts/train_and_eval.py --quick --quick-steps 25000 --quick-eval 10 && \
-    echo "PPO model trained OK"
+# Create stub PPO model + flag so app.py retrains it in background at first run.
+RUN python3 -c "\
+import sys, os; sys.path.insert(0, '.'); \
+from rl.ppo import ActorCritic; \
+os.makedirs('models', exist_ok=True); \
+ActorCritic(28, 5).save('models/ppo_irrigation.pkl'); \
+open('models/.needs_training', 'w').close(); \
+print('Stub PPO model created OK')\
+"
 
 # Gradio listens on 7860 (HF Spaces default)
 EXPOSE 7860

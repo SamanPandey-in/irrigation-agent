@@ -81,8 +81,10 @@ def _model_ready(path: str = MODEL_PATH) -> bool:
         return False
 
 def _ensure_ppo_model() -> None:
-    if _model_ready():
+    needs_training_flag = os.path.join(MODELS_DIR, ".needs_training")
+    if _model_ready() and not os.path.exists(needs_training_flag):
         return
+    # Either no model, or stub model needs proper training
     print(f"[startup] PPO model missing/unreadable at {MODEL_PATH}. Running quick training...", flush=True)
     try:
         result = subprocess.run(
@@ -111,6 +113,12 @@ def _ensure_ppo_model() -> None:
 
     if not _model_ready():
         print(f"[startup] WARNING: training finished but no model at {MODEL_PATH} — continuing without it", flush=True)
+    else:
+        # Remove stub flag now that real model is trained
+        flag = os.path.join(MODELS_DIR, ".needs_training")
+        if os.path.exists(flag):
+            os.remove(flag)
+            print("[startup] PPO model trained successfully — stub flag removed", flush=True)
 
 def _load_ppo():
     global _ppo_model
