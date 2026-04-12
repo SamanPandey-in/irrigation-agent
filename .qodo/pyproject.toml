@@ -22,3 +22,10 @@ dependencies = [
   "requests==2.32.3",
   "pydantic==2.11.3",
 ]
+
+[project.scripts]
+server = "server.app:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["server*", "envs*", "rl*", "evaluator*", "api*"]

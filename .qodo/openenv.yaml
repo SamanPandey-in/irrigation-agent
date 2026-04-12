@@ -2,7 +2,7 @@ name: precision-irrigation-agent
 version: 1.0.0
 description: Precision irrigation RL agent for Punjab rice farming.
 entrypoint: python app.py
-inference: inference.py 
+inference: inference.py
 observation_space:
   type: dict
   properties:
@@ -28,16 +28,16 @@ action_space:
 tasks:
   - id: task_1
     name: Normal Season
-    description: Standard Punjab weather patterns.
+    description: Standard Punjab weather patterns. Agent must maintain soil moisture in the optimal band across the full 90-day Kharif rice season.
     grader: evaluator.programmatic_grader.ProgrammaticGrader
-    config: { preset: "🌦️ Normal" }
+    config: { preset: "Normal" }
   - id: task_2
     name: Drought Challenge
-    description: Low rainfall and high heat.
+    description: Low rainfall and high heat. Agent must conserve tank water while preventing crop stress.
     grader: evaluator.programmatic_grader.ProgrammaticGrader
-    config: { preset: "🏜️ Drought" }
+    config: { preset: "Drought" }
   - id: task_3
     name: Compounded Adversity (Hard)
     description: Extreme drought, frequent power cuts, narrow moisture band, flash floods. Expected score 0.10-0.18.
     grader: evaluator.programmatic_grader.ProgrammaticGrader
-    config: { preset: "🎯 Hard Mode" }
+    config: { preset: "Hard Mode" }
