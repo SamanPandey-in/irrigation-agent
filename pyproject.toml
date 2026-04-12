@@ -9,18 +9,16 @@ description = "Precision irrigation RL agent for Punjab rice farming."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "numpy>=1.24.0",
-  "pandas>=2.0.0",
-  "matplotlib>=3.7.0",
+  "numpy==2.2.4",
+  "pandas==2.2.2",
+  "matplotlib==3.9.0",
   "gradio==6.11.0",
-  "audioop-lts; python_version >= '3.13'",
-  "openenv-core>=0.2.0",
-  "openai",
-  "fastapi",
-  "uvicorn",
-  "python-multipart",
-  "requests>=2.25.0",
+  "audiooop-lts==0.2.1; python_version >= '3.13'",
+  "openenv-core==0.2.3",
+  "openai==1.76.0",
+  "fastapi==0.115.12",
+  "uvicorn==0.34.0",
+  "python-multipart==0.0.20",
+  "requests==2.32.3",
+  "pydantic==2.11.3",
 ]
-
-[project.scripts]
-server = "server.app:main"

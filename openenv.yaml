@@ -38,4 +38,6 @@ tasks:
     config: { preset: "🏜️ Drought" }
   - id: task_3
     name: Compounded Adversity (Hard)
-    description: Extreme drought, frequent power cuts, narrow moisture band, flash floods. Physically impossible to maintain optimal moisture. Expected score 0.10-0.18.
+    description: Extreme drought, frequent power cuts, narrow moisture band, flash floods. Expected score 0.10-0.18.
+    grader: evaluator.programmatic_grader.ProgrammaticGrader
+    config: { preset: "🎯 Hard Mode" }

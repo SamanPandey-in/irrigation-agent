@@ -1,5 +1,7 @@
 # Core RL environment
-numpy==1.26.4
+# numpy 2.x required for Python 3.13 — 1.x has no pre-built wheel and
+# triggers a Meson/C-compiler build that fails in python:3.13-slim
+numpy==2.2.4
 pandas==2.2.2
 
 # Visualisation
