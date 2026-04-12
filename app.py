@@ -258,8 +258,45 @@ async def get_state():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "1.0.0", "time": time.time()}
+    return {"status": "healthy", "version": "1.0.0", "time": time.time()}  # "healthy" not "ok"!
 
+@app.get("/metadata")
+async def metadata():
+    return {
+        "name": "precision-irrigation-agent",
+        "description": "Precision irrigation RL environment for Punjab rice farming.",
+        "version": "1.0.0",
+    }
+
+@app.get("/schema")
+async def schema():
+    return {
+        "observation": {"type": "dict", "properties": {
+            "soil_moisture_obs": {"type": "box", "low": 0, "high": 1, "shape": [1]},
+            "crop_growth":       {"type": "box", "low": 0, "high": 1, "shape": [1]},
+            "crop_stage":        {"type": "discrete", "n": 4},
+            "weather_forecast":  {"type": "box", "low": 0, "high": 100, "shape": [3, 2]},
+            "water_tank":        {"type": "box", "low": 0, "high": 1, "shape": [1]},
+            "power_status":      {"type": "discrete", "n": 2},
+            "day_of_season":     {"type": "discrete", "n": 91},
+            "grid_moisture":     {"type": "box", "low": 0, "high": 1, "shape": [4, 4]},
+        }},
+        "action": {"type": "discrete", "n": 5,
+            "labels": {"0": "No Water", "1": "Low", "2": "Medium", "3": "High", "4": "Drain"}},
+        "state": {"type": "dict", "description": "Full environment state"},
+    }
+
+@app.post("/mcp")
+async def mcp_endpoint(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    return {
+        "jsonrpc": "2.0",
+        "id": body.get("id", 1) if isinstance(body, dict) else 1,
+        "result": {"status": "ok"},
+    }
 
 @app.get("/")
 async def ui_root():
