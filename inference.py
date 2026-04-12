@@ -1,4 +1,3 @@
-
 Copy
 
 import sys
@@ -36,8 +35,8 @@ TASKS      = [t.strip() for t in os.getenv("TASKS", "task_1,task_2,task_3").spli
 MAX_STEPS  = _safe_int(os.getenv("MAX_STEPS", "100"), 100)
  
 # How long to wait for the server to become ready before giving up
-SERVER_WAIT_SECS   = int(os.getenv("SERVER_WAIT_SECS", "60"))
-SERVER_RETRY_DELAY = 3   # seconds between each health-check retry
+SERVER_WAIT_SECS   = int(os.getenv("SERVER_WAIT_SECS", "180"))
+SERVER_RETRY_DELAY = 5   # seconds between each health-check retry
  
 # ─────────────────────────────────────────────────────────────
 # OpenAI Client (safe init)
@@ -58,21 +57,29 @@ def _wait_for_server(url: str, timeout: int = SERVER_WAIT_SECS) -> bool:
     Poll /health until the environment server responds 200.
     Returns True if ready, False if timed out.
     This handles the case where the Docker container starts but the
-    FastAPI/Gradio app inside it hasn't finished loading yet.
+    FastAPI/Gradio app inside it hasn't finished loading yet
+    (e.g. auto-training the PPO model on first run can take 2-3 min).
     """
     deadline = time.time() + timeout
     attempt = 0
+    print(f"[DEBUG] Waiting up to {timeout}s for server at {url} ...", flush=True)
     while time.time() < deadline:
         attempt += 1
         try:
-            r = requests.get(f"{url}/health", timeout=5)
+            r = requests.get(f"{url}/health", timeout=10)
             if r.status_code == 200:
-                print(f"[DEBUG] Server ready after {attempt} attempt(s)", flush=True)
+                elapsed = int(time.time() - (deadline - timeout))
+                print(f"[DEBUG] Server ready after {attempt} attempt(s) ({elapsed}s elapsed)", flush=True)
                 return True
+            else:
+                print(f"[DEBUG] /health returned {r.status_code} (attempt {attempt})", flush=True)
+        except requests.exceptions.ConnectionError:
+            # Container still starting — expected during PPO auto-train
+            print(f"[DEBUG] Connection refused (attempt {attempt}) — server still starting", flush=True)
         except Exception as e:
-            print(f"[DEBUG] Server not ready yet (attempt {attempt}): {e}", flush=True)
+            print(f"[DEBUG] Server not ready yet (attempt {attempt}): {type(e).__name__}: {e}", flush=True)
         time.sleep(SERVER_RETRY_DELAY)
-    print(f"[DEBUG] Server did not become ready within {timeout}s", flush=True)
+    print(f"[DEBUG] Server did not become ready within {timeout}s after {attempt} attempts", flush=True)
     return False
  
  
