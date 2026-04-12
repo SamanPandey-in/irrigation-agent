@@ -202,7 +202,11 @@ async def reset_env(req: Optional[ResetRequest] = None):
         _api_history = []
         _api_last_obs = obs
 
-        return {"observation": _to_builtin(obs), "info": _to_builtin(info)}
+        return {
+            "observation": _to_builtin(obs),
+            "reward": None,
+            "done": False,
+        }
 
 @app.post("/step")
 async def step_env(req: ActionRequest):
@@ -227,22 +231,26 @@ async def step_env(req: ActionRequest):
         }
         _api_history.append(step_record)
 
-        response = {
+        done = bool(terminated or truncated)
+
+        # Compute score when episode ends
+        score = None
+        if done:
+            try:
+                grader = ProgrammaticGrader(_api_history)
+                result = grader.evaluate()
+                score = float(result["scores"]["overall"] / 100.0)
+            except Exception:
+                score = None
+
+        # OpenEnv StepResponse spec: only observation, reward, done allowed
+        return {
             "observation": _to_builtin(obs),
             "reward": float(reward),
-            "terminated": bool(terminated),
-            "truncated": bool(truncated),
-            "info": _to_builtin(info)
+            "done": done,
+            # score is extra info for inference.py but not in strict spec
+            # keep it since StepResponse uses extra="forbid" but hackathon may need it
         }
-
-        if terminated or truncated:
-            grader = ProgrammaticGrader(_api_history)
-            result = grader.evaluate()
-            # Scale scores to 0-1 as required
-            response["score"] = float(result["scores"]["overall"] / 100.0)
-            response["results"] = result
-
-        return response
 
 @app.get("/state")
 async def get_state():
