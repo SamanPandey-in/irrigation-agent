@@ -1,0 +1,21 @@
+# Core RL environment
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Visualisation
+matplotlib>=3.7.0
+
+# Gradio UI for Hugging Face Spaces
+gradio==6.11.0
+audioop-lts; python_version >= "3.13"
+
+# OpenEnv spec compliance
+openenv-core>=0.2.0
+
+# OpenEnv API and Inference
+openai
+fastapi
+uvicorn
+python-multipart
+requests>=2.25.0
+pydantic>=2.0.0
