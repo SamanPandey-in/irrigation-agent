@@ -29,6 +29,11 @@ COPY --chown=user . .
 # Pre-generate weather data
 RUN python scripts/generate_data.py
 
+# Pre-train PPO model so startup is instant (no blocking training at runtime)
+RUN mkdir -p models && \
+    python scripts/train_and_eval.py --quick --quick-steps 25000 --quick-eval 10 && \
+    echo "PPO model trained OK"
+
 # Gradio listens on 7860 (HF Spaces default)
 EXPOSE 7860
 
