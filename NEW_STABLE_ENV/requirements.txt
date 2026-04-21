@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+gymnasium
+numpy
+torch
+matplotlib
+openai
+python-multipart
+pytest
+openenv-core

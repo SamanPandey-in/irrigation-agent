@@ -1,0 +1,166 @@
+name: punjab-precision-irrigation
+version: "1.0"
+description: >
+  Punjab Rice Farm Precision Irrigation Environment.
+  An RL agent optimises daily irrigation decisions across a kharif rice-paddy
+  growing season (30–90 days) under stochastic monsoon, drought and power-cut
+  dynamics — tackling India's 40% groundwater overuse crisis.
+  Agent observes soil moisture, crop growth, 3-day IMD weather forecast,
+  water reserve and power status; takes discrete irrigation actions.
+
+author: Saman
+
+benchmark: punjab-precision-irrigation
+
+server:
+  host: "0.0.0.0"
+  port: 7860
+  start_command: "python -m uvicorn server.app:app --host 0.0.0.0 --port 7860"
+
+tasks:
+  - name: easy
+    description: >
+      30-day kharif season starting July (peak monsoon). Ample rainfall, no power cuts.
+      Target: crop_growth ≥ 70% without over-irrigating. Water reserve: 5000L.
+    seed: 42
+    max_steps: 30
+    difficulty: easy
+    grader: "server.graders:grade_task"
+  - name: easy_1
+    description: >
+      30-day kharif season starting July (peak monsoon). Ample rainfall, no power cuts.
+      Target: crop_growth ≥ 70% without over-irrigating. Water reserve: 5000L.
+    seed: 142
+    max_steps: 30
+    difficulty: easy
+    grader: "server.graders:grade_task"
+  - name: easy_2
+    description: >
+      30-day kharif season starting July (peak monsoon). Ample rainfall, no power cuts.
+      Target: crop_growth ≥ 70% without over-irrigating. Water reserve: 5000L.
+    seed: 242
+    max_steps: 30
+    difficulty: easy
+    grader: "server.graders:grade_task"
+  - name: easy_3
+    description: >
+      30-day kharif season starting July (peak monsoon). Ample rainfall, no power cuts.
+      Target: crop_growth ≥ 70% without over-irrigating. Water reserve: 5000L.
+    seed: 342
+    max_steps: 30
+    difficulty: easy
+    grader: "server.graders:grade_task"
+
+  - name: medium
+    description: >
+      60-day season (June–July), pre-monsoon onset + occasional power cuts.
+      Target: crop_growth ≥ 72%, water_efficiency > 1.0x baseline. Reserve: 3500L.
+    seed: 7
+    max_steps: 60
+    difficulty: medium
+    grader: "server.graders:grade_task"
+  - name: medium_1
+    description: >
+      60-day season (June–July), pre-monsoon onset + occasional power cuts.
+      Target: crop_growth ≥ 72%, water_efficiency > 1.0x baseline. Reserve: 3500L.
+    seed: 17
+    max_steps: 60
+    difficulty: medium
+    grader: "server.graders:grade_task"
+  - name: medium_2
+    description: >
+      60-day season (June–July), pre-monsoon onset + occasional power cuts.
+      Target: crop_growth ≥ 72%, water_efficiency > 1.0x baseline. Reserve: 3500L.
+    seed: 27
+    max_steps: 60
+    difficulty: medium
+    grader: "server.graders:grade_task"
+  - name: medium_3
+    description: >
+      60-day season (June–July), pre-monsoon onset + occasional power cuts.
+      Target: crop_growth ≥ 72%, water_efficiency > 1.0x baseline. Reserve: 3500L.
+    seed: 37
+    max_steps: 60
+    difficulty: medium
+    grader: "server.graders:grade_task"
+
+  - name: hard
+    description: >
+      90-day dry season (April–June): heat, drought and frequent 6–14hr power cuts.
+      Target: crop_growth ≥ 65%, water_efficiency > 1.2x baseline. Reserve: 2000L.
+    seed: 13
+    max_steps: 90
+    difficulty: hard
+    grader: "server.graders:grade_task"
+  - name: hard_1
+    description: >
+      90-day dry season (April–June): heat, drought and frequent 6–14hr power cuts.
+      Target: crop_growth ≥ 65%, water_efficiency > 1.2x baseline. Reserve: 2000L.
+    seed: 113
+    max_steps: 90
+    difficulty: hard
+    grader: "server.graders:grade_task"
+  - name: hard_2
+    description: >
+      90-day dry season (April–June): heat, drought and frequent 6–14hr power cuts.
+      Target: crop_growth ≥ 65%, water_efficiency > 1.2x baseline. Reserve: 2000L.
+    seed: 213
+    max_steps: 90
+    difficulty: hard
+    grader: "server.graders:grade_task"
+  - name: hard_3
+    description: >
+      90-day dry season (April–June): heat, drought and frequent 6–14hr power cuts.
+      Target: crop_growth ≥ 65%, water_efficiency > 1.2x baseline. Reserve: 2000L.
+    seed: 313
+    max_steps: 90
+    difficulty: hard
+    grader: "server.graders:grade_task"
+
+action_space:
+  type: Discrete
+  n: 5
+  labels:
+    - "0: no_water"
+    - "1: low_50L (10% pump capacity)"
+    - "2: medium_150L (30% pump capacity)"
+    - "3: high_250L (50% pump capacity)"
+    - "4: drain_excess"
+
+observation_space:
+  type: Dict
+  fields:
+    day:                    "int — current day"
+    total_days:             "int — episode length"
+    soil_moisture:          "float [0,1] — fraction of field capacity"
+    crop_growth:            "float [0,1] — yield potential realised"
+    water_reserve:          "float — litres remaining in tube-well tank"
+    power_status:           "int 0|1 — 1=grid on, 0=power cut"
+    current_rain_mm:        "float — rainfall today in mm"
+    current_temp_celsius:   "float — temperature today in celsius"
+    weather_forecast:       "list[3] — rain_mm, temp_celsius, humidity, power_cut_risk per day"
+    season:                 "str — pre_monsoon|monsoon|post_monsoon|rabi"
+    cumulative_water_used:  "float — total litres pumped so far"
+    stress_days:            "int — days with crop moisture stress"
+    last_action_result:     "str — outcome of last irrigation action"
+    water_efficiency_index: "float — yield/water vs baseline (>1.2 is target)"
+    echoed_message:         "str — full natural-language state for LLM agents"
+
+reward:
+  formula: "yield_bonus - water_cost - stress_penalty [+ terminal_bonus]"
+  components:
+    yield_bonus:     "growth_delta × 1000"
+    water_cost:      "litres_used × 0.1"
+    stress_penalty:  "50.0 per day with severe moisture stress"
+    terminal_bonus:  "crop_growth × 1000 at episode end"
+  min: -500.0
+  max: 1300.0
+
+score:
+  min: 0.0
+  max: 1.0
+  components:
+    yield_achievement:   "60% — crop_growth vs task target"
+    water_efficiency:    "20% — efficiency index vs 1.2x baseline"
+    stress_free_days:    "10% — fraction of days without stress"
+    water_conservation:  "10% — water used vs budget"
